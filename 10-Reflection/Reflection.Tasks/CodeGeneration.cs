@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 
 namespace Reflection.Tasks
 {
@@ -14,7 +11,7 @@ namespace Reflection.Tasks
         /// Generally, CLR does not allow to implement such a method via generics to have one function for various number types:
         /// int, long, float. double.
         /// But it is possible to generate the method in the run time! 
-        /// See the idea of code generation using Expression Tree at: 
+        /// at: 
         /// http://blogs.msdn.com/b/csharpfaq/archive/2009/09/14/generating-dynamic-methods-with-expression-trees-in-visual-studio-2010.aspx
         /// </summary>
         /// <typeparam name="T">number type (int, long, float etc)</typeparam>
@@ -24,9 +21,23 @@ namespace Reflection.Tasks
         /// </returns>
         public static Func<T[], T[], T> GetVectorMultiplyFunction<T>() where T : struct {
             // TODO : Implement GetVectorMultiplyFunction<T>.
-            throw new NotImplementedException();
-        } 
+            ParameterExpression arg1 = Expression.Parameter(typeof(T[]), "arg");
+            ParameterExpression arg2 = Expression.Parameter(typeof(T[]), "arg");
 
+            var method = typeof(CodeGeneration)
+                .GetMethod("GenericMultupyVectors")
+                .MakeGenericMethod(typeof(T));
+
+            MethodCallExpression methodCall = Expression.Call(
+            method,
+            arg1,
+            arg2);
+
+            return Expression.Lambda<Func<T[], T[], T>>(
+            methodCall,
+            new ParameterExpression[] { arg1, arg2 }
+            ).Compile();
+        }
 
         // Static solution to check performance benchmarks
         public static int MultuplyVectors(int[] first, int[] second) {
@@ -37,5 +48,14 @@ namespace Reflection.Tasks
             return result;
         }
 
+        public static T GenericMultupyVectors<T>(T[] first, T[] second)
+        {
+            dynamic result = 0;
+            for (int i = 0; i < first.Length; i++)
+            {
+                result += (dynamic)first[i] * (dynamic)second[i];
+            }
+            return result;
+        }
     }
 }
