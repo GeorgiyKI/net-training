@@ -57,10 +57,7 @@ namespace Task.Generics
         private static readonly Lazy<T> lazy = new Lazy<T>(() => new T());
         public static T Instance
         {
-            get
-            {
-                return lazy.Value;
-            }
+            get => lazy.Value;
         }
     }
 
@@ -85,7 +82,7 @@ namespace Task.Generics
 
         public static Predicate<T> CombinePredicates<T>(Predicate<T>[] predicates)
         {
-            return (T x) => predicates.All(predicate => predicate.Invoke(x));
+            return (x) => predicates.All(predicate => predicate(x));
         }
     }
 }
