@@ -71,8 +71,7 @@ namespace Reflection.Tasks
         {
             foreach (string part in propertyPath.Split('.'))
             {
-                Type type = obj.GetType();
-                var propertyInfo = type.GetProperty(part);
+                var propertyInfo = obj.GetType().GetProperty(part);
                
                 if (propertyPath.EndsWith(part))
                 {
