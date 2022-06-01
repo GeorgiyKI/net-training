@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 
 namespace Reflection.Tasks
 {
@@ -14,19 +15,15 @@ namespace Reflection.Tasks
         /// <returns>List of public but obsolete classes</returns>
         public static IEnumerable<string> GetPublicObsoleteClasses(string assemblyName)
         {
-            if (assemblyName is null)
-                throw new ArgumentNullException("assemblyName is null");
+            if (assemblyName == null)
+                throw new ArgumentNullException(nameof(assemblyName));
 
-            Assembly assembly = Assembly.Load(assemblyName);
-            var result = new List<string>();
-            foreach (var item in assembly.GetTypes())
-            {
-                bool isHaveObsoleteAtribute = item.GetCustomAttribute(typeof(ObsoleteAttribute)) != null;
-                if (item.IsClass && item.IsPublic && isHaveObsoleteAtribute)
-                    result.Add(item.Name);
-            }
-
-            return result;
+            return Assembly.Load(assemblyName)
+                   .GetTypes()
+                   .Where(type => type.IsClass 
+                          && type.IsPublic
+                          && type.GetCustomAttribute<ObsoleteAttribute>() != null)
+                   .Select(type => type.Name);
         }
 
         /// <summary>
@@ -48,19 +45,8 @@ namespace Reflection.Tasks
         /// <returns>property value of obj for required propertyPath</returns>
         public static T GetPropertyValue<T>(this object obj, string propertyPath)
         {
-            // TODO : Implement GetPropertyValue method
             foreach (string part in propertyPath.Split('.'))
-            {
-                if (obj == null)
-                    throw new ArgumentNullException("obj is null");
-
-                Type type = obj.GetType();
-                PropertyInfo info = type.GetProperty(part);
-                if (info == null)
-                    throw new ArgumentNullException("Property info is null");
-
-                obj = info.GetValue(obj);
-            }
+                obj = obj.GetType().GetProperty(part).GetValue(obj);
 
             return (T)obj;
         }
@@ -83,27 +69,24 @@ namespace Reflection.Tasks
         /// <param name="value">assigned value</param>
         public static void SetPropertyValue(this object obj, string propertyPath, object value)
         {
-            // TODO : Implement SetPropertyValue method
-            PropertyInfo info = null;
             foreach (string part in propertyPath.Split('.'))
             {
-                if (obj == null)
-                    throw new ArgumentNullException("obj is null");
-
                 Type type = obj.GetType();
-                info = type.GetProperty(part);
+                var propertyInfo = type.GetProperty(part);
+               
+                if (propertyPath.EndsWith(part))
+                {
+                    if (!propertyInfo.CanWrite)
+                        propertyInfo = propertyInfo.DeclaringType.GetProperty(part);
 
-                if (info == null)
-                    throw new ArgumentNullException("Property info is null");
-                else if (!info.CanWrite)
-                    info = info.DeclaringType.GetProperty(part);
-
-                Type valueGeted = info.GetValue(obj).GetType();
-                if (!(valueGeted.IsPrimitive || valueGeted == typeof(Decimal) || valueGeted == typeof(String)))
-                    obj = info.GetValue(obj);
+                    propertyInfo.GetSetMethod(true)
+                                .Invoke(obj, new object[] { value });
+                }
+                else
+                {
+                    obj = propertyInfo.GetValue(obj);
+                }
             }
-
-            info.SetValue(obj, value);
         }
     }
 }
