@@ -43,19 +43,17 @@ namespace Task.Generics
             if (sortedColumn >= array.Length || sortedColumn < 0)
                 throw new IndexOutOfRangeException();
 
-            Func<Tuple<T1, T2, T3>, IComparable>[] funcs =
+            var orderComparer = ascending ? 1 : -1;
+            Func<Tuple<T1, T2, T3>, IComparable>[] item =
             {
-                (x) => x.Item1,
-                (x) => x.Item2,
-                (x) => x.Item3
+                (tuple) => tuple.Item1,
+                (tuple) => tuple.Item2,
+                (tuple) => tuple.Item3
             };
 
-            Array.Sort(array, (x, y) =>
-            {
-                var orderComparer = ascending ? -1 : 1;
-
-                return funcs[sortedColumn](y).CompareTo(funcs[sortedColumn](x)) * orderComparer;
-            });
+            Array.Sort(array, (e1, e2) =>
+               item[sortedColumn](e1).CompareTo(item[sortedColumn](e2)) * orderComparer
+            ); ;
         }
     }
 
