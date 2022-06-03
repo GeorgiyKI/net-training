@@ -32,14 +32,14 @@ namespace Reflection.Tasks
 
             BlockExpression block = Expression.Block(
                 new[] { result, iteration },
-                    Expression.Assign(iteration, Expression.Constant(-1)),
-                    Expression.Loop(
-                        Expression.IfThenElse(Expression.GreaterThan(Expression.ArrayLength(args[0]), Expression.PreIncrementAssign(iteration)),
-                                              Expression.AddAssign(result, Expression.Multiply(Expression.ArrayAccess(args[0], iteration),
-                                                                                               Expression.ArrayAccess(args[1], iteration))),
-                                              Expression.Break(label, result)
+                Expression.Assign(iteration, Expression.Constant(-1)),
+                Expression.Loop(
+                    Expression.IfThenElse(Expression.GreaterThan(Expression.ArrayLength(args[0]), Expression.PreIncrementAssign(iteration)),
+                                          Expression.AddAssign(result, Expression.Multiply(Expression.ArrayAccess(args[0], iteration),
+                                                                                           Expression.ArrayAccess(args[1], iteration))),
+                                          Expression.Break(label, result)
                         ),
-                    label)
+                label)
             );
 
             return Expression.Lambda<Func<T[], T[], T>>(block, args[0], args[1]).Compile();
