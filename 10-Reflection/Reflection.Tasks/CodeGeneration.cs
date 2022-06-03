@@ -19,55 +19,39 @@ namespace Reflection.Tasks
         ///   The function that return scalar product of two vectors
         ///   The generated dynamic method should be equal to static MultuplyVectors (see below).   
         /// </returns>
-        public static Func<T[], T[], T> GetVectorMultiplyFunction<T>() where T : struct {
-            // TODO : Implement GetVectorMultiplyFunction<T>.
-            ParameterExpression arg1 = Expression.Parameter(typeof(T[]), "arg");
-            ParameterExpression arg2 = Expression.Parameter(typeof(T[]), "arg");
-            ParameterExpression result = Expression.Parameter(typeof(T), "result");
-            ParameterExpression interetions = Expression.Parameter(typeof(int), "interetions");
-
-            LabelTarget label = Expression.Label(typeof(T));
+        public static Func<T[], T[], T> GetVectorMultiplyFunction<T>() where T : struct
+        {
+            var result = Expression.Parameter(typeof(T));
+            var iteration = Expression.Parameter(typeof(int));
+            var label = Expression.Label(typeof(T));
+            ParameterExpression[] args =
+            {
+                Expression.Parameter(typeof(T[])),
+                Expression.Parameter(typeof(T[]))
+            };
 
             BlockExpression block = Expression.Block(
-                new[] { result },
-                new[] { interetions },
-                 Expression.Assign(result, Expression.Constant(0)),
-                 Expression.Assign(interetions, Expression.Constant(0)),
-                 Expression.Loop(
-                      Expression.IfThenElse(
-                          Expression.GreaterThan(Expression.ArrayLength(arg1), interetions),
-                            Expression.AddAssign(result,
-                            Expression.Multiply(Expression.ArrayAccess(arg1)))
+                new[] { result, iteration },
+                    Expression.Assign(iteration, Expression.Constant(-1)),
+                    Expression.Loop(
+                        Expression.IfThenElse(Expression.GreaterThan(Expression.ArrayLength(args[0]), Expression.PreIncrementAssign(iteration)),
+                                              Expression.AddAssign(result, Expression.Multiply(Expression.ArrayAccess(args[0], iteration),
+                                                                                               Expression.ArrayAccess(args[1], iteration))),
+                                              Expression.Break(label, result)
+                        ),
+                    label)
+            );
 
-
-
-            var method = typeof(CodeGeneration)
-                .GetMethod("GenericMultupyVectors")
-                .MakeGenericMethod(typeof(T));
-
-            MethodCallExpression methodCall = Expression.Call(
-            method,
-            arg1,
-            arg2);
-
-            return Expression.Lambda<Func<T[], T[], T>>( methodCall, new ParameterExpression[] { arg1, arg2 }).Compile();
+            return Expression.Lambda<Func<T[], T[], T>>(block, args[0], args[1]).Compile();
         }
 
         // Static solution to check performance benchmarks
-        public static int MultuplyVectors(int[] first, int[] second) {
-            int result = 0;
-            for (int i = 0; i < first.Length; i++) {
-                result += first[i] * second[i];
-            }
-            return result;
-        }
-
-        public static T GenericMultupyVectors<T>(T[] first, T[] second)
+        public static int MultuplyVectors(int[] first, int[] second)
         {
-            dynamic result = 0;
+            int result = 0;
             for (int i = 0; i < first.Length; i++)
             {
-                result += (dynamic)first[i] * (dynamic)second[i];
+                result += first[i] * second[i];
             }
             return result;
         }
