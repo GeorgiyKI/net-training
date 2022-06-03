@@ -37,7 +37,7 @@ namespace Reflection.Tests
         }
 
 
-        [TestMethod]
+        [TestMethod]    
         [TestCategory("Code Generation")]
         public void GetVectorMultiplyFunction_Returns_Function_For_Double() {
             var first = new double[] { 1D, 2D, 3D };
