@@ -35,23 +35,20 @@ namespace Collections.Tasks
         /// </example>
         public static IEnumerable<int> GetFibonacciSequence(int count)
         {
-
-            if (count > 0)
-            {
-                int[] mas = { 0, 1 };
-                for (int i = 0; i < count; i++)
-                {
-                    yield return mas[1];
-                    int temp = mas[1];
-                    mas[1] = mas[1] + mas[0];
-                    mas[0] = temp;
-                }
-            }
-            else if (count < 0)
-            {
+            if (count < 0)
                 throw new ArgumentException($"{nameof(count)} can't be less then 0");
+            
+            int[] mas = { 0, 1 };
+            for (int i = 0; i < count; i++)
+            {
+                yield return mas[1];
+                int temp = mas[1];
+                mas[1] += mas[0];
+                mas[0] = temp;
             }
         }
+    
+        
 
         /// <summary>
         ///    Parses the input string sequence into words
@@ -79,6 +76,7 @@ namespace Collections.Tasks
                 foreach (var item in line.Split(delimeters, StringSplitOptions.RemoveEmptyEntries))
                     queue.Enqueue(item);
             }
+
             return queue;
         }
 
