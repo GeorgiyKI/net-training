@@ -17,7 +17,6 @@ namespace Collections.Tasks
         IEnumerable<ITreeNode<T>> Children { get; set; } // List of childrens
     }
 
-
     public class Task
     {
 
@@ -38,17 +37,16 @@ namespace Collections.Tasks
             if (count < 0)
                 throw new ArgumentException($"{nameof(count)} can't be less then 0");
             
-            int[] mas = { 0, 1 };
+            int firstFebNumber = 0;
+            int secondFebNumber = 1;
             for (int i = 0; i < count; i++)
             {
-                yield return mas[1];
-                int temp = mas[1];
-                mas[1] += mas[0];
-                mas[0] = temp;
+                yield return secondFebNumber;
+                int temp = secondFebNumber;
+                secondFebNumber += firstFebNumber;
+                firstFebNumber = temp;
             }
         }
-    
-        
 
         /// <summary>
         ///    Parses the input string sequence into words
@@ -70,17 +68,12 @@ namespace Collections.Tasks
             char[] delimeters = new[] { ',', ' ', '.', '\t', '\n' };
 
             string line;
-            var queue = new Queue<string>();
             while ((line = reader.ReadLine()) != null)
             {
-                foreach (var item in line.Split(delimeters, StringSplitOptions.RemoveEmptyEntries))
-                    queue.Enqueue(item);
+                foreach (var text in line.Split(delimeters, StringSplitOptions.RemoveEmptyEntries))
+                    yield return text;
             }
-
-            return queue;
         }
-
-
 
         /// <summary>
         ///   Traverses a tree using the depth-first strategy
@@ -108,19 +101,17 @@ namespace Collections.Tasks
             if (root == null)
                 throw new ArgumentNullException(nameof(root));
 
-            var linkedList = new LinkedList<ITreeNode<T>>();
-            linkedList.AddFirst(root);
+            var stackTreeNode = new Stack<ITreeNode<T>>();
+            stackTreeNode.Push(root);
 
-            while (linkedList.Count != 0)
+            while (stackTreeNode.Count != 0)
             {
-                root = linkedList.First.Value;
+                root = stackTreeNode.Pop();
                 yield return root.Data;
 
                 if (root.Children != null)
                     foreach (var item in root.Children.Reverse())
-                        linkedList.AddAfter(linkedList.First, item);
-                
-                linkedList.RemoveFirst();
+                        stackTreeNode.Push(item);                
             };
         }
 
@@ -150,26 +141,19 @@ namespace Collections.Tasks
             if (root == null)
                 throw new ArgumentNullException(nameof(root));
 
-            var queueChildrens = new Queue<ITreeNode<T>>();
-            queueChildrens.Enqueue(root);
-            while (queueChildrens.Count != 0)
-            {
-                root = queueChildrens.Dequeue();
-                yield return root.Data;
-                if (root.Children != null)
-                {
-                    foreach (var children in root.Children)
-                    {
-                        if (children.Children != null)
-                            foreach (var childrenOfChildren in children.Children)
-                                queueChildrens.Enqueue(childrenOfChildren);
+            var queueTreeNode = new Queue<ITreeNode<T>>();
+            queueTreeNode.Enqueue(root);
 
-                        yield return children.Data;
-                    }
-                }
+            while (queueTreeNode.Count != 0)
+            {
+                root = queueTreeNode.Dequeue();
+                yield return root.Data;
+
+                if (root.Children != null)
+                    foreach (var children in root.Children)
+                        queueTreeNode.Enqueue(children);
             };
         }
-
 
         /// <summary>
         ///   Generates all permutations of specified length from source array
@@ -190,10 +174,50 @@ namespace Collections.Tasks
         /// </example>
         public static IEnumerable<T[]> GenerateAllPermutations<T>(T[] source, int count)
         {
-            // TODO : Implement GenerateAllPermutations method
-            throw new NotImplementedException();
+            var curr = new HashSet<T>(source);
+            var list = new List<HashSet<T>>();
+
+            foreach (var s in GetAllPermutationsRec(count, curr))
+            {
+                if (HashContains(list, s))
+                    list.Add(new HashSet<T>(s.Reverse()));
+            }
+
+            foreach (var item in list)
+            {
+                yield return item.ToArray();
+            }
         }
 
+        static bool HashContains<T>(List<HashSet<T>> list, HashSet<T> hash)
+        {
+            foreach (var item in list)
+                if (item.IsSupersetOf(hash))
+                    return false;
+
+            return true;
+        }
+
+        static IEnumerable<HashSet<T>> GetAllPermutationsRec<T>(int n, HashSet<T> curr)
+        {
+            if (n > 0)
+            {
+                foreach (var c in curr.ToList())
+                {
+                    curr.Remove(c);
+                    foreach (var s in GetAllPermutationsRec(n - 1, curr))
+                    {
+                        s.Add(c);
+                        yield return s;
+                    }
+                    curr.Add(c);
+                }
+            }
+            else if (n == 0)
+            {
+                yield return new HashSet<T>();
+            }
+        }
     }
 
     public static class DictionaryExtentions
@@ -219,9 +243,10 @@ namespace Collections.Tasks
         /// </example>
         public static TValue GetOrBuildValue<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> builder)
         {
-            // TODO : Implement GetOrBuildValue method for cache
-            throw new NotImplementedException();
-        }
+            if (!dictionary.ContainsKey(key))
+                dictionary.Add(key, builder.Invoke());
 
+            return dictionary[key];
+        }
     }
 }
